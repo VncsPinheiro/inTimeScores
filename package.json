@@ -1,0 +1,27 @@
+{
+  "name": "intimescore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx  --env-file=.env src/server.ts",
+    "dev": "tsx watch --env-file=.env src/server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "@types/node": "^25.0.4",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "firebase": "12.7.0",
+    "firebase-admin": "^13.6.0",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

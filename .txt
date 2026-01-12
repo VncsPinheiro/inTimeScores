@@ -1,0 +1,21 @@
+Precisa conseguir:
+  - Pegar todos os times de determinada região: 
+  - Pegar todos os campeonatos; ROTA: https://api.football-data.org/v4/competitions
+  - Pegar todas as partidas de um campeonato; ROTA: https://api.football-data.org/v4/competitions/${nome-do-campeonato}/matches
+
+  - Pegar todos os times em um campeonato; ROTA: https://api.football-data.org/v4/competitions/${nome-do-campeonato}/teams
+  - Mostrar dados base do time (fundação, treinador, estádio, escudo, etc.); ROTA: https://api.football-data.org/v4/teams/${id-do-time}
+  - Pegar todas as partidas de um time; ROTA: https://api.football-data.org/v4/teams/${id-do-time}/matches
+  - Pegar todas as partidas de um time em determinado campeonato; ROTA: https://api.football-data.org/v4/teams/${id-do-time}/matches?competitions=${id-da-competição} OBS: posso usar um filtro.
+
+
+  Rotas com necessidade de banco de dados:
+  - Time do coração;
+  - Pegar próximas partidas dos times seguidos;
+  - Seguir um time / Deixar de seguir um time;
+  - Sign In / Sign Up;
+  - Upload de foto;
+
+
+
+  Usar o firebase pra salvar usuários e relações com times (seguindo)
