@@ -1,137 +1,219 @@
-import { env } from "../env"
-import type { GetAllCompetitionsRequestType, GetAllMatchesInACompetitionRequest, GetAllTeamsInACompetitionRequest, GetTeamMatchesRequest, GetTeamRequest,  } from "../types/root"
+import { resolve } from 'node:dns'
+import { type Either, Left, left, right } from '../core/Either'
+import { env } from '../env'
+import type {
+	FormatedCompetition,
+	FormatedMatch,
+	FormatedMatchWithCompetition,
+	FormatedTeam,
+	GetAllCompetitionsRequestType,
+	GetAllCompetitionsResponseType,
+	GetAllMatchesInACompetitionRequest,
+	GetAllMatchesInACompetitionResponse,
+	GetAllTeamsInACompetitionRequest,
+	GetAllTeamsInACompetitionResponse,
+	GetTeamMatchesRequest,
+	GetTeamMatchesResponse,
+	GetTeamRequest,
+	GetTeamResponse,
+	GetTeamsMatchesPerCompetitionResponse,
+} from '../types/root'
 
-export class FootballDataApi{
-  constructor (private apiKey: string) {}
+export class FootballDataApi {
+	constructor(private apiKey: string) {}
 
-  async getAllCompetitions() {
-    const request = await this.fetchToApi('/competitions')
-    .then(res => res.json() as Promise<GetAllCompetitionsRequestType>)
+	async getAllCompetitions(): Promise<
+		Either<Error, GetAllCompetitionsResponseType>
+	> {
+		const request =
+			await this.fetchToApi<GetAllCompetitionsRequestType>('/competitions')
 
-    const competitions = request.competitions.map(i => ({
-      id: i.id,
-      area: {
-        name: i.area.name,
-        flag: i.area.flag
-      },
-      name: i.name,
-      emblem: i.emblem,
-      avaliableSeasons: i.numberOfAvaliableSeasons,
-    }))
+		if (request.isLeft()) return left(request.value)
 
-    return {
-      count: request.count,
-      competitions,
-    }
-  } // Checked
+		const competitions: FormatedCompetition[] = request.value.competitions.map(
+			(i) => ({
+				id: i.id,
+				area: {
+					name: i.area.name,
+					flag: i.area.flag,
+				},
+				name: i.name,
+				emblem: i.emblem,
+				avaliableSeasons: i.numberOfAvaliableSeasons,
+			}),
+		)
 
-  async getAllMatchesInACompetition(name: string) {
-    const request: GetAllMatchesInACompetitionRequest = await this.fetchToApi(`/competitions/${name}/matches`)
-    .then(res => res.json() as Promise<GetAllMatchesInACompetitionRequest>)
-    
-    return request.matches.map(i => ({
-      id: i.id,
-      utcDate: i.utcDate,
-      matchDay: i.matchday,
+		return right({
+			count: request.value.count,
+			competitions,
+		})
+	} // Checked Again
+
+	async getAllMatchesInACompetition(
+		name: string,
+	): Promise<Either<Error, GetAllMatchesInACompetitionResponse>> {
+		const request = await this.fetchToApi<GetAllMatchesInACompetitionRequest>(
+			`/competitions/${name}/matches`,
+		)
+
+		if (request.isLeft()) return left(request.value)
+
+		const matches: FormatedMatch[] = request.value.matches.map((i) => ({
+			id: i.id,
+			utcDate: i.utcDate,
+			matchDay: i.matchday,
+			stage: i.stage,
+			status: i.status,
+			teams: {
+				homeTeam: i.homeTeam,
+				awayTeam: i.awayTeam,
+			},
+			score: {
+				winner: i.score.winner,
+				duration: i.score.duration,
+				fullTime: i.score.fullTime,
+			},
+			referees: i.referees,
+		}))
+
+		return right({
+			matches,
+		})
+	} // Cheked Again
+
+	async getAllTeamsInACompetition(
+		competitionName: string,
+	): Promise<Either<Error, GetAllTeamsInACompetitionResponse>> {
+		const request = await this.fetchToApi<GetAllTeamsInACompetitionRequest>(
+			`/${competitionName}/teams`,
+		)
+
+		if (request.isLeft()) return left(request.value)
+
+		const teams = request.value.teams.map((i) => ({
+			id: i.id,
+			area: {
+				name: i.area.name,
+				flag: i.area.flag,
+			},
+			name: i.name,
+			shortName: i.shortName,
+			tla: i.tla,
+			crest: i.crest,
+		}))
+
+		return right({
+			teams,
+		})
+	} // Cheked Again
+
+	async getTeam(teamId: string): Promise<Either<Error, GetTeamResponse>> {
+		const request = await this.fetchToApi<GetTeamRequest>(`/teams/${teamId}`)
+
+		if (request.isLeft()) return left(request.value)
+
+		const team: FormatedTeam = {
+			id: request.value.id,
+			area: {
+				name: request.value.area.name,
+				flag: request.value.area.flag,
+			},
+			name: request.value.name,
+			shortName: request.value.shortName,
+			tla: request.value.tla,
+			crest: request.value.crest,
+		}
+		return right({
+			team,
+		})
+	} // Cheked Again
+
+	async getTeamMatches(
+		teamId: string,
+	): Promise<Either<Error, GetTeamMatchesResponse>> {
+		const request = await this.fetchToApi<GetTeamMatchesRequest>(
+			`/teams/${teamId}/matches`,
+		)
+
+		if (request.isLeft()) return left(request.value)
+
+		const matches: FormatedMatchWithCompetition[] = request.value.matches.map(
+			(i) => ({
+				competition: i.competition,
+				id: i.id,
+				utcDate: i.utcDate,
+				status: i.status,
+				matchDay: i.matchday,
+				stage: i.stage,
+				teams: {
+					homeTeam: i.homeTeam,
+					awayTeam: i.awayTeam,
+				},
+				score: {
+					winner: i.score.winner,
+					duration: i.score.duration,
+					fullTime: i.score.fullTime,
+				},
+				referees: i.referees,
+			}),
+		)
+
+		return right({
+			resultSet: request.value.resultSet,
+			matches,
+		})
+	} // Cheked Again
+
+	async getTeamsMatchesPerCompetition(
+		teamId: string,
+		competitionId?: string,
+	): Promise<Either<Error, GetTeamsMatchesPerCompetitionResponse>> {
+		const request = await this.fetchToApi<GetTeamMatchesRequest>(
+			`/teams/${teamId}/matches?competitions=${competitionId}`,
+		)
+
+		if (request.isLeft()) return left(request.value)
+
+		const matches: FormatedMatchWithCompetition[] = request.value.matches.map((i) => ({
+			competition: i.competition,
+			id: i.id,
+			utcDate: i.utcDate,
+			status: i.status,
+			matchDay: i.matchday,
       stage: i.stage,
-      ststus: i.status,
-      teams: {
-        homeTeam: i.homeTeam,
-        awayTeam: i.awayTeam,
-      },
-      score: {
+			teams: {
+				homeTeam: i.homeTeam,
+				awayTeam: i.awayTeam,
+			},
+			score: {
         winner: i.score.winner,
         duration: i.score.duration,
         fullTime: i.score.fullTime
       },
-      referees: i.referees
-    }))
-  } // Cheked
+			referees: i.referees,
+		}))
 
-  async getAllTeamsInACompetition(competitionName: string) {
-    const request = await this.fetchToApi(`/${competitionName}/teams`)
-    .then(res => res.json() as Promise<GetAllTeamsInACompetitionRequest>)
-
-    return request.teams.map(i => ({
-      id: i.id,
-      area: {
-        name: i.area.name,
-        flag: i.area.flag
-      },
-      name: i.name,
-      shortName: i.shortName,
-      tla: i.tla,
-      crest: i.crest
-    }))
-  } // Cheked
-
-  async getTeam(teamId: string) {
-    const request = await this.fetchToApi(`/teams/${teamId}`)
-    .then(res => res.json() as Promise<GetTeamRequest>)
-
-    return {
-      ...request,
-      area: {
-        name: request.area.name,
-        flag: request.area.flag
-      },
-    }
-  } // Cheked
-
-  async getTeamMatches(teamId: string) {
-    const request = await this.fetchToApi(`/teams/${teamId}/matches`)
-    .then(res => res.json() as Promise<GetTeamMatchesRequest>)
-
-    return {
-      ...request,
-      matches: request.matches.map(i => ({
-        competititon: i.competition,
-        id: i.id,
-        utcDate: i.utcDate,
-        status: i.status,
-        matchDay: i.matchday,
-        teams: {
-          homeTeam: i.homeTeam,
-          awayTeam: i.awayTeam
-        },
-        score: i.score,
-        referees: i.referees
-      }))
-    }
-  } // Cheked
-
-  async getTeamsMatchesPerCompetition(teamId: string, competitionId?: string) {
-    const request = await this.fetchToApi(`/teams/${teamId}/matches?competitions=${competitionId}`)
-    .then(res => res.json() as Promise<GetTeamMatchesRequest>)
-    
-    return {
-      ...request,
-      matches: request.matches.map(i => ({
-        competititon: i.competition,
-        id: i.id,
-        utcDate: i.utcDate,
-        status: i.status,
-        matchDay: i.matchday,
-        teams: {
-          homeTeam: i.homeTeam,
-          awayTeam: i.awayTeam
-        },
-        score: i.score,
-        referees: i.referees
-      }))
-    }
-
-  } // Cheked
-
-  private async fetchToApi(url: string) {
-    return await fetch(`https://api.football-data.org/v4${url}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Auth-Token': this.apiKey,
-      }
+    return right ({
+      resultSet: request.value.resultSet,
+      matches,
     })
-  } // Método de requisição
+	} // Cheked Again
+
+	private async fetchToApi<T>(url: string): Promise<Either<Error, T>> {
+		try {
+			const response = await fetch(`https://api.football-data.org/v4${url}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Auth-Token': this.apiKey,
+				},
+			}).then((res) => res.json() as Promise<T>)
+
+			return right(response)
+		} catch (err: any) {
+			return left(new Error(`Api error. Message: ${err}`))
+		}
+	} // Método de requisição
 }
 
 export const FootballDataService = new FootballDataApi(env.API_KEY)
