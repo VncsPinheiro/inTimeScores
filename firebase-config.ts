@@ -1,10 +1,15 @@
-import admin from 'firebase-admin'
-import { env } from "./src/env"
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app"
+import { getFirestore } from "firebase/firestore"
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-const serviceAccount = require(env.FIREBASE_KEY_PATH)
+// Your web app's Firebase configuration
+const firebaseConfig = {
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-})
+};
 
-export const db = admin.firestore();
+// Initialize Firebase
+const app = initializeApp(firebaseConfig)
+
+export const db = getFirestore(app)
