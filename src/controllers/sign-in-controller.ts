@@ -1,14 +1,36 @@
-// import type { Request, Response } from 'express'
-// import { Firebase, type FirebaseInstance } from "../services/firebase-service";
+import type { Request, Response } from 'express'
+import { firebaseService, type FirebaseService } from '../services/firebase-service'
+import { jwtEncrypter, type JwtEncrypter } from '../services/jwt-service'
+import { hashService, HashService } from '../services/hash-service'
 
-// class SignInWithFirebase {
-//   constructor(private firebase: FirebaseInstance) {}
+class SignInController {
+	constructor(
+		private firebaseService: FirebaseService,
+		private jwtEncrypter: JwtEncrypter,
+		private hashService: HashService,
+	) {}
 
-//   handle = async (request: Request, response: Response) => {
-//     const { email, password } = request.body
-//     await this.firebase.signIn({ email, password })
-//     response.status(200).send('User authenticated')
-//   }
-// }
+	handle = async (request: Request, response: Response) => {
+		const { email, password } = request.body
+		const user = await this.firebaseService.getUserByEmail({ email })
 
-// export const SignInWithFirebaseController = new SignInWithFirebase(Firebase)
+		if (!user)
+			return response.status(400).send({
+				message: 'Usuário não encontrado',
+			})
+
+		const isPasswordValid = await this.hashService.compare(user.password, password)
+
+		if (!isPasswordValid) return response.status(400).send({
+			message: 'Invalid password'
+		})
+
+		const token = this.jwtEncrypter.sign(user.id)
+
+		response.status(200).json({
+			token,
+		})
+	}
+}
+
+export const signInController = new SignInController(firebaseService, jwtEncrypter, hashService)

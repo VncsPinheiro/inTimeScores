@@ -1,9 +1,10 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
-  PORT: z.coerce.number().default(3000),
-  API_KEY: z.string(),
-  FIREBASE_KEY_PATH: z.string(),
+	PORT: z.coerce.number().default(3000),
+	API_KEY: z.string(),
+	SECRET_KEY: z.string(),
+	FIREBASE_KEY_PATH: z.string(),
 })
 
 export const env = envSchema.parse(process.env)

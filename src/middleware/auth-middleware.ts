@@ -1,20 +1,27 @@
 import type { NextFunction, Request, Response } from 'express'
-import admin from 'firebase-admin'
+import { type JwtEncrypter, jwtEncrypter } from '../services/jwt-service'
 
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).send({ message: 'Acesso negado. Token não fornecido.' })
-    }
+export class AuthMiddleware {
+	constructor(private jwtEncrypter: JwtEncrypter) {}
 
-    const token = authHeader.split('Bearer ')[1]
+	handle = async (req: Request, res: Response, next: NextFunction) => {
+		const authHeader = req.headers.authorization
+		const token = authHeader?.split(' ')[1]
 
-    try {
-      const decodedToken = await admin.auth().verifyIdToken(token)
+		if (!token)
+			return res
+				.status(401)
+				.send({ message: 'Acesso negado. Token não fornecido.' })
 
-      req.body.userId = decodedToken.uid
-      next()
-    } catch (error) {
-      return res.status(401).json({ message: 'Token inválido ou expirado.' })
-    }
+		const result = this.jwtEncrypter.verify(token)
+
+		if (result.isLeft())
+			return res.status(400).send({
+				message: 'Token Inválido',
+			})
+		req.userId = result.value.id
+		next()
+	}
 }
+
+export const authMiddleware = new AuthMiddleware(jwtEncrypter)
